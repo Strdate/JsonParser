@@ -30,10 +30,10 @@ namespace JsonParser
             return c;
         }
 
-        internal object Read()
+        internal object Read(string implicitType = null)
         {
             //try {
-                return ReadJsonObject();
+                return ReadJsonObject(implicitType);
             //} catch(Exception e) {
             //    throw new Exception($"Error at character {p}: {e.Message}", e);
             //}

@@ -9,11 +9,13 @@ namespace JsonParser
 {
     class TypeManager
     {
+        private static Dictionary<Type, TypeHandlingRecord> typeHandlingRecords = new Dictionary<Type, TypeHandlingRecord>();
+
         private static Dictionary<string, Type> types = new Dictionary<string, Type>();
 
         private static Dictionary<string, ListTypeRecord> listTypes = new Dictionary<string, ListTypeRecord>();
 
-        internal static Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
+        internal static Dictionary<string, Dictionary<string,PropertyInfo>> properties = new Dictionary<string, Dictionary<string, PropertyInfo>>();
 
         internal ParsedObject InstantiateObj(string name)
         {
@@ -26,6 +28,26 @@ namespace JsonParser
             ListTypeRecord record = ListTypeByName(name);
             addMethod = record.addMethod;
             return Activator.CreateInstance(record.type);
+        }
+
+        internal TypeHandlingRecord GetTypeHandlingRecord(Type type)
+        {
+            if(!typeHandlingRecords.TryGetValue(type, out TypeHandlingRecord record)) {
+                if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>)) {
+                    record.handleType = HandleType.List;
+                    record.genArgument = type.GetGenericArguments()[0];
+                } else if(type == typeof(string)) {
+                    record.handleType = HandleType.ToStringEscaped;
+                } else if (type == typeof(int)) {
+                    record.handleType = HandleType.ToStringNaked;
+                } else if (type == typeof(double)) {
+                    record.handleType = HandleType.DecimalNum;
+                } else {
+                    record.handleType = HandleType.StructuredObject;
+                }
+                typeHandlingRecords[type] = record;
+            }
+            return record;
         }
 
         private static ListTypeRecord ListTypeByName(string name)
@@ -48,6 +70,12 @@ namespace JsonParser
                 foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies().Reverse()) {
                     foreach (var t in assembly.GetTypes()) {
                         if (t.Name == name || t.FullName == name) {
+                            if(t.GetCustomAttributes(
+                                typeof(SerializableAttribute), true
+                                ).FirstOrDefault() == null) {
+                                throw new Exception($"Class {t.Name} is not serializable");
+                            }
+                            InitProperties(t, name);
                             types[name] = t;
                             return t;
                         }
@@ -58,15 +86,32 @@ namespace JsonParser
             return type;
         }
 
+        private static void InitProperties(Type type, string typeName)
+        {
+            var dict = new Dictionary<string, PropertyInfo>();
+            foreach(var prop in type.GetProperties()) {
+                if(prop.GetCustomAttributes(
+                    typeof(NonSerializedAttribute), true
+                    ).FirstOrDefault() == null) {
+                    dict.Add(prop.Name, prop);
+                }
+            }
+            properties.Add(typeName, dict);
+        }
+
         internal static PropertyInfo GetProperty(string typeName, string propertyName)
         {
-            string combined = typeName + "@@p#" + propertyName;
-            if (!properties.TryGetValue(combined, out PropertyInfo prop)) {
-                Type type = TypeByName(typeName);
-                prop = type.GetProperty(propertyName);
-                properties[combined] = prop;
+            if (!properties.TryGetValue(typeName, out Dictionary<string, PropertyInfo> propDict)) {
+                TypeByName(typeName);
+                propDict = properties[typeName];
             }
-            return prop;
+            return propDict[propertyName];
+        }
+
+        internal Dictionary<string, PropertyInfo>.ValueCollection GetProperties(string typeName)
+        {
+            TypeByName(typeName);
+            return properties[typeName].Values;
         }
     }
 
@@ -96,5 +141,20 @@ namespace JsonParser
     {
         internal Type type;
         internal MethodInfo addMethod;
+    }
+
+    struct TypeHandlingRecord
+    {
+        internal HandleType handleType;
+        internal Type genArgument;
+    }
+
+    enum HandleType
+    {
+        ToStringEscaped,
+        ToStringNaked,
+        DecimalNum,
+        List,
+        StructuredObject
     }
 }

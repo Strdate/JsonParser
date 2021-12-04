@@ -44,6 +44,7 @@
   <ItemGroup>
     <Compile Include="JsonParser.cs" />
     <Compile Include="JsonReader.cs" />
+    <Compile Include="JsonWriter.cs" />
     <Compile Include="ObjectA.cs" />
     <Compile Include="ObjectB.cs" />
     <Compile Include="Program.cs" />

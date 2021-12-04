@@ -34,7 +34,18 @@ namespace JsonParser
                 "\"intArray\": [27, 98, 1145983, 5]" +
                 "}";
 
+            string json2 = "{" +
+                "\"StringProp\": \"Hello world!!\", " +
+                "\"objB\": { " +
+                "  \"__type\": \"ObjectB\"," +
+                "  \"Foo\": \"bar\"" +
+                "} " +
+                "}";
+
             object res = parser.ReadJson(json);
+            object res2 = parser.ReadJson(json2, "ObjectA");
+
+            string serialized = parser.WriteJson(res);
 
             Console.ReadLine();
         }

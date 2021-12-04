@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace JsonParser
 {
+    [Serializable]
     public class ObjectA
     {
         public string StringProp { get; set; }
