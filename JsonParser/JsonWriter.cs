@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace JsonParser
+namespace DumbJsonParser
 {
     class JsonWriter
     {
@@ -20,41 +19,36 @@ namespace JsonParser
 
         internal string Write()
         {
-            WriteJsonType(sourceObj, null, sourceObj.GetType());
+            WriteJsonType(sourceObj, TypeManager.TypeByType(sourceObj.GetType()));
             return b.ToString();
         }
 
-        private void WriteJsonType(object obj, string propName = null, Type implicitType = null)
+        private void WriteJsonType(object obj, TypeHandlingRecord implicitType)
         {
             Type t = obj.GetType();
-            TypeHandlingRecord handleType = typeManager.GetTypeHandlingRecord(t);
+            TypeHandlingRecord handleType = TypeManager.TypeByType(t);
 
             if (handleType.handleType == HandleType.List) {
-                WriteList(obj, propName, t, handleType.genArgument);
+                WriteList(obj, implicitType);
             } else {
-                if(propName != null) {
-                    b.Append($"\"{propName}\":");
-                }
-
                 if (handleType.handleType == HandleType.StructuredObject) {
-                    WriteJsonObject(obj, t, t == implicitType);
+                    WriteJsonObject(obj, t, t == implicitType.type);
                 } else if (handleType.handleType == HandleType.ToStringEscaped) {
-                    b.Append($"\"{EscapeStr(obj.ToString())}\"");
+                    EscapeStr(obj.ToString());
                 } else if (handleType.handleType == HandleType.ToStringNaked) {
-                    b.Append($"{EscapeStr(obj.ToString())}");
+                    EscapeStr(obj.ToString());
+                } else if (handleType.handleType == HandleType.ToStringLower) {
+                    b.Append($"{obj.ToString().ToLower()}");
                 } else if (handleType.handleType == HandleType.DecimalNum) {
                     b.Append($"{obj.ToString().Replace(',','.')}");
                 }
             }
-            
-            
         }
 
-        private void WriteList(object obj, string propName, Type type, Type genericArg)
+        private void WriteList(object obj, TypeHandlingRecord record)
         {
-            b.Append($"\"__type_{propName}\": \"{genericArg.Name}\",");
             System.Collections.IEnumerable list = obj as System.Collections.IEnumerable;
-            b.Append($"\"{propName}\": [");
+            b.Append($"[");
             bool isFirst = true;
             foreach (var item in list) {
                 if (!isFirst) {
@@ -62,7 +56,7 @@ namespace JsonParser
                 } else {
                     isFirst = false;
                 }
-                WriteJsonType(item, null, genericArg);
+                WriteJsonType(item, record.sourceListType);
             }
             b.Append("]");
         }
@@ -75,72 +69,59 @@ namespace JsonParser
                 isFirst = false;
                 b.Append($"\"__type\": \"{type.Name}\"");
             }
-            foreach (var prop in typeManager.GetProperties(type.Name)) {
-                if (!isFirst) {
-                    b.Append(",");
-                } else {
-                    isFirst = false;
-                }
-                object val = prop.GetValue(obj);
+            foreach (var propr in typeManager.GetProperties(type)) {
+                var prop = propr.prop;
+                object val = prop.GetValue(obj, null);
                 if (val != null) {
-                    WriteJsonType(val, prop.Name);
+                    if (!isFirst) {
+                        b.Append(",");
+                    } else {
+                        isFirst = false;
+                    }
+                    b.Append($"\"{prop.Name}\":");
+                    WriteJsonType(val, propr.typeRecord);
                 }
 
             }
             b.Append("}");
         }
 
-        private static string EscapeStr(string s)
+        private void EscapeStr(string s)
         {
+            b.Append('"');
             if (s == null || s.Length == 0) {
-                return "";
+                b.Append('"');
+                return;
             }
-
-            char c = '\0';
+            char c;
             int i;
-            int len = s.Length;
-            StringBuilder sb = new StringBuilder(len + 4);
-            String t;
+            bool lastWasCR = false;
 
-            for (i = 0; i < len; i += 1) {
+            for (i = 0; i < s.Length; i += 1) {
                 c = s[i];
                 switch (c) {
                     case '\\':
                     case '"':
-                        sb.Append('\\');
-                        sb.Append(c);
-                        break;
-                    /*case '/':
-                        sb.Append('\\');
-                        sb.Append(c);
-                        break;
-                    case '\b':
-                        sb.Append("\\b");
-                        break;
-                    case '\t':
-                        sb.Append("\\t");
-                        break;
-                    case '\n':
-                        sb.Append("\\n");
-                        break;
-                    case '\f':
-                        sb.Append("\\f");
+                        b.Append('\\');
+                        b.Append(c);
                         break;
                     case '\r':
-                        sb.Append("\\r");
-                        break;*/
-                    default:
-                        sb.Append(c);
-                        /*if (c < ' ') {
-                            t = "000" + String.Format("X", c);
-                            sb.Append("\\u" + t.Substring(t.Length - 4));
+                        b.Append("\\n");
+                        lastWasCR = true;
+                        break;
+                    case '\n':
+                        if(lastWasCR) {
+                            lastWasCR = false;
                         } else {
-                            sb.Append(c);
-                        }*/
+                            b.Append("\\n");
+                        }
+                        break;
+                    default:
+                        b.Append(c);
                         break;
                 }
             }
-            return sb.ToString();
+            b.Append('"');
         }
     }
 }

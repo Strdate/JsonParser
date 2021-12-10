@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace JsonParser
+namespace DumbJsonParser
 {
     class Program
     {
@@ -29,8 +28,13 @@ namespace JsonParser
                 "  }" +
                 "]," +
                 "\"CoolNumber\": 152.998," +
+                "\"VeryLong\": 9223372036854775806," +
                 "\"Integer\": 15504," +
+                "\"newLines\": \"New\\nline\\nboo!\"," +
                 "\"__type_intArray\": \"Int32\"," +
+                "\"Sbytee\": -117," +
+                "\"TruOrFols\": true," +
+                "\"Fols\": false," +
                 "\"intArray\": [27, 98, 1145983, 5]" +
                 "}";
 
@@ -46,6 +50,8 @@ namespace JsonParser
             object res2 = parser.ReadJson(json2, "ObjectA");
 
             string serialized = parser.WriteJson(res);
+
+            object utf8 = Encoding.UTF8.GetString( Encoding.UTF8.GetBytes(serialized) );
 
             Console.ReadLine();
         }

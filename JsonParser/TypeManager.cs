@@ -3,156 +3,195 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace JsonParser
+namespace DumbJsonParser
 {
     class TypeManager
     {
-        private static Dictionary<Type, TypeHandlingRecord> typeHandlingRecords = new Dictionary<Type, TypeHandlingRecord>();
+        private static Dictionary<string, TypeHandlingRecord> types = new Dictionary<string, TypeHandlingRecord>();
 
-        private static Dictionary<string, Type> types = new Dictionary<string, Type>();
+        private static Dictionary<Type, TypeHandlingRecord> typesByType = new Dictionary<Type, TypeHandlingRecord>();
 
-        private static Dictionary<string, ListTypeRecord> listTypes = new Dictionary<string, ListTypeRecord>();
-
-        internal static Dictionary<string, Dictionary<string,PropertyInfo>> properties = new Dictionary<string, Dictionary<string, PropertyInfo>>();
-
-        internal ParsedObject InstantiateObj(string name)
+        internal ParsedObject InstantiateObj(TypeHandlingRecord record)
         {
-            Type t = TypeByName(name);
-            return new ParsedObject(Activator.CreateInstance(t), name);
+            return new ParsedObject(Activator.CreateInstance(record.type), record);
         }
 
-        internal object InstantiateList(string name, out MethodInfo addMethod)
+        internal ParsedObject InstantiateObj(string typeName)
         {
-            ListTypeRecord record = ListTypeByName(name);
-            addMethod = record.addMethod;
-            return Activator.CreateInstance(record.type);
+            TypeHandlingRecord record = TypeByName(typeName);
+            return new ParsedObject(Activator.CreateInstance(record.type), record);
         }
 
-        internal TypeHandlingRecord GetTypeHandlingRecord(Type type)
+        internal static TypeHandlingRecord TypeByType(Type type)
         {
-            if(!typeHandlingRecords.TryGetValue(type, out TypeHandlingRecord record)) {
-                if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>)) {
-                    record.handleType = HandleType.List;
-                    record.genArgument = type.GetGenericArguments()[0];
-                } else if(type == typeof(string)) {
-                    record.handleType = HandleType.ToStringEscaped;
-                } else if (type == typeof(int)) {
-                    record.handleType = HandleType.ToStringNaked;
-                } else if (type == typeof(double)) {
-                    record.handleType = HandleType.DecimalNum;
-                } else {
-                    record.handleType = HandleType.StructuredObject;
-                }
-                typeHandlingRecords[type] = record;
+            if (!typesByType.TryGetValue(type, out TypeHandlingRecord record)) {
+                return PrepareType(type);
             }
             return record;
         }
 
-        private static ListTypeRecord ListTypeByName(string name)
+        internal static TypeHandlingRecord TypeByName(string name)
         {
-            if (!listTypes.TryGetValue(name, out ListTypeRecord record)) {
-                Type t = typeof(List<>);
-                Type[] typeArgs = { TypeByName(name) };
-                t = t.MakeGenericType(typeArgs);
-                MethodInfo addMethod = t.GetMethod("Add");
-                record.type = t;
-                record.addMethod = addMethod;
-                listTypes[name] = record;
-            }
-            return record;
-        }
-
-        private static Type TypeByName(string name)
-        {
-            if(!types.TryGetValue(name, out Type type)) {
+            if(!types.TryGetValue(name, out TypeHandlingRecord record)) {
                 foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies().Reverse()) {
-                    foreach (var t in assembly.GetTypes()) {
-                        if (t.Name == name || t.FullName == name) {
-                            if(t.GetCustomAttributes(
-                                typeof(SerializableAttribute), true
-                                ).FirstOrDefault() == null) {
-                                throw new Exception($"Class {t.Name} is not serializable");
-                            }
-                            InitProperties(t, name);
-                            types[name] = t;
-                            return t;
+                    foreach (var type in assembly.GetTypes()) {
+                        if (type.Name == name) {
+                            return PrepareType(type);
                         }
                     }
                 }
                 throw new Exception($"Failed to find type '{name}'");
             }
-            return type;
+            return record;
         }
 
-        private static void InitProperties(Type type, string typeName)
+        private static TypeHandlingRecord PrepareType(Type type)
         {
-            var dict = new Dictionary<string, PropertyInfo>();
-            foreach(var prop in type.GetProperties()) {
-                if(prop.GetCustomAttributes(
-                    typeof(NonSerializedAttribute), true
-                    ).FirstOrDefault() == null) {
-                    dict.Add(prop.Name, prop);
-                }
+            TypeHandlingRecord record = new TypeHandlingRecord();
+            if (type.GetCustomAttributes(
+                                typeof(SerializableAttribute), true
+                                ).FirstOrDefault() == null) {
+                throw new Exception($"Class {type.Name} is not serializable");
             }
-            properties.Add(typeName, dict);
-        }
-
-        internal static PropertyInfo GetProperty(string typeName, string propertyName)
-        {
-            if (!properties.TryGetValue(typeName, out Dictionary<string, PropertyInfo> propDict)) {
-                TypeByName(typeName);
-                propDict = properties[typeName];
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>)) {
+                record.handleType = HandleType.List;
+                record.sourceListType = TypeByType(type.GetGenericArguments()[0]);
+            } else if (type == typeof(string)) {
+                record.handleType = HandleType.ToStringEscaped;
+            } else if (type == typeof(int) || type == typeof(long)) {
+                record.handleType = HandleType.ToStringNaked;
+            } else if (type == typeof(double)) {
+                record.handleType = HandleType.DecimalNum;
+            } else if (type == typeof(bool)) {
+                record.handleType = HandleType.ToStringLower;
+            } else {
+                record.handleType = HandleType.StructuredObject;
             }
-            return propDict[propertyName];
+            record.type = type;
+            types[type.Name] = record;
+            typesByType[type] = record;
+            return record;
         }
 
-        internal Dictionary<string, PropertyInfo>.ValueCollection GetProperties(string typeName)
+        internal static PropertyRecord GetProperty(Type type, string propertyName)
         {
-            TypeByName(typeName);
-            return properties[typeName].Values;
+            TypeByType(type);
+            return typesByType[type].props[propertyName];
+        }
+
+        internal Dictionary<string, PropertyRecord>.ValueCollection GetProperties(Type type)
+        {
+            TypeByType(type);
+            return typesByType[type].props.Values;
         }
     }
 
     class ParsedObject
     {
         private object inner;
-        private string typeString;
+        private TypeHandlingRecord typeRecord;
 
-        internal ParsedObject(object inner, string typeString)
+        internal ParsedObject(object inner, TypeHandlingRecord record)
         {
             this.inner = inner;
-            this.typeString = typeString;
+            this.typeRecord = record;
         }
 
-        internal void AssignProperty(string name, object obj)
+        internal PropertyRecord GetProperty(string name)
         {
-            PropertyInfo prop = TypeManager.GetProperty(typeString, name);
-            if(prop != null) {
-                prop.SetValue(inner, obj);
+            if(typeRecord.props.TryGetValue(name, out PropertyRecord val)) {
+                return val;
             }
+            return null;
+        }
+
+        internal void SetProperty(PropertyRecord record, object value)
+        {
+            record.prop.SetValue(inner, value, null);
         }
 
         internal object GetObject() => inner;
     }
 
-    struct ListTypeRecord
+    class TypeHandlingRecord
     {
+        internal HandleType handleType;
         internal Type type;
+        internal TypeHandlingRecord sourceListType;
+
+        private Dictionary<string, PropertyRecord> _props;
+        internal Dictionary<string, PropertyRecord> props  {
+            get {
+                if (_props == null) {
+                    InitProperties();
+                }
+                return _props;
+            }
+        }
+
+        private ListTypeRecord _listRecord;
+        private ListTypeRecord listRecord {
+            get {
+                if (_listRecord == null) {
+                    InitListRecord();
+                }
+                return _listRecord;
+            }
+        }
+
+        internal object InstantiateList(out MethodInfo addMethod)
+        {
+            addMethod = listRecord.addMethod;
+            return Activator.CreateInstance(listRecord.listType);
+        }
+
+        private void InitProperties()
+        {
+            var dict = new Dictionary<string, PropertyRecord>();
+            foreach (var prop in type.GetProperties()) {
+                if (prop.GetCustomAttributes(
+                    typeof(NonSerializedAttribute), true
+                    ).FirstOrDefault() == null) {
+                    PropertyRecord record = new PropertyRecord();
+                    record.typeRecord = TypeManager.TypeByType(prop.PropertyType);
+                    record.prop = prop;
+                    dict.Add(prop.Name, record);
+                }
+            }
+            this._props = dict;
+        }
+
+        private void InitListRecord()
+        {
+            ListTypeRecord record = new ListTypeRecord();
+            Type t = typeof(List<>);
+            Type[] typeArgs = { this.type };
+            t = t.MakeGenericType(typeArgs);
+            MethodInfo addMethod = t.GetMethod("Add");
+            record.listType = t;
+            record.addMethod = addMethod;
+            this._listRecord = record;
+        }
+    }
+
+    class ListTypeRecord
+    {
+        internal Type listType;
         internal MethodInfo addMethod;
     }
 
-    struct TypeHandlingRecord
+    class PropertyRecord
     {
-        internal HandleType handleType;
-        internal Type genArgument;
+        internal PropertyInfo prop;
+        internal TypeHandlingRecord typeRecord;
     }
 
     enum HandleType
     {
         ToStringEscaped,
         ToStringNaked,
+        ToStringLower,
         DecimalNum,
         List,
         StructuredObject
