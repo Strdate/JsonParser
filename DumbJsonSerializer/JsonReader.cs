@@ -7,7 +7,7 @@ using System.Text;
 
 namespace DumbJsonSerializer
 {
-    class JsonReader
+    internal class JsonReader
     {
         private readonly TypeManager typeManager;
 
@@ -30,15 +30,15 @@ namespace DumbJsonSerializer
 
         internal object Read(string implicitType = null)
         {
-            //try {
-            TypeHandlingRecord record = null;
-            if(implicitType != null) {
-                record = TypeManager.TypeByName(implicitType);
+            try {
+                TypeHandlingRecord record = null;
+                if(implicitType != null) {
+                    record = TypeManager.TypeByName(implicitType);
+                }
+                return ReadJsonObject(record);
+            } catch(Exception e) {
+                throw new Exception($"Error at character {p}: {e.Message}", e);
             }
-            return ReadJsonObject(record);
-            //} catch(Exception e) {
-            //    throw new Exception($"Error at character {p}: {e.Message}", e);
-            //}
         }
 
         private object ReadJsonObject(TypeHandlingRecord type = null)
@@ -83,7 +83,7 @@ namespace DumbJsonSerializer
                 firstPass = false;
                 SkipComma();
             }
-            return obj.GetObject();
+            return obj != null ? obj.GetObject() : null;
         }
 
         private object ReadJsonType(TypeHandlingRecord type)

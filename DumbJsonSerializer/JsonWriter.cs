@@ -5,7 +5,7 @@ using System.Text;
 
 namespace DumbJsonSerializer
 {
-    class JsonWriter
+    internal class JsonWriter
     {
         private readonly TypeManager typeManager;
         private readonly object sourceObj;

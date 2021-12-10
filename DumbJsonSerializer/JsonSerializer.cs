@@ -5,9 +5,11 @@ using System.Text;
 
 namespace DumbJsonSerializer
 {
-    class JsonParser
+    public class JsonSerializer
     {
         private TypeManager typeManager = new TypeManager();
+
+        public static string VERSION = "0.0.1";
         public object ReadJson(string text, string implicitType = null)
         {
             var reader = new JsonReader(text, typeManager);

@@ -10,7 +10,7 @@ namespace DumbJsonSerializer
     {
         static void Main(string[] args)
         {
-            var parser = new JsonParser();
+            var parser = new JsonSerializer();
             string json = "{ \"__type\": \"ObjectA\"," +
                 "\"StringProp\": \"Hello world!!\", " +
                 "\"objB\": { " +
@@ -31,6 +31,7 @@ namespace DumbJsonSerializer
                 "\"CoolNumber\": 152.998," +
                 "\"VeryLong\": 9223372036854775806," +
                 "\"Integer\": 15504," +
+                "\"missingProp\": {\"ImNotHere\": 42.42}," +
                 "\"newLines\": \"New\\nline\\nboo!\"," +
                 "\"__type_intArray\": \"Int32\"," +
                 "\"Sbytee\": -117," +

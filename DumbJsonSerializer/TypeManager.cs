@@ -88,7 +88,7 @@ namespace DumbJsonSerializer
         }
     }
 
-    class ParsedObject
+    internal class ParsedObject
     {
         private object inner;
         private TypeHandlingRecord typeRecord;
@@ -115,7 +115,7 @@ namespace DumbJsonSerializer
         internal object GetObject() => inner;
     }
 
-    class TypeHandlingRecord
+    internal class TypeHandlingRecord
     {
         internal HandleType handleType;
         internal Type type;
@@ -176,19 +176,19 @@ namespace DumbJsonSerializer
         }
     }
 
-    class ListTypeRecord
+    internal class ListTypeRecord
     {
         internal Type listType;
         internal MethodInfo addMethod;
     }
 
-    class PropertyRecord
+    internal class PropertyRecord
     {
         internal PropertyInfo prop;
         internal TypeHandlingRecord typeRecord;
     }
 
-    enum HandleType
+    internal enum HandleType
     {
         ToStringEscaped,
         ToStringNaked,
