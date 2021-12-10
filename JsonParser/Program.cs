@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
-namespace DumbJsonParser
+namespace DumbJsonSerializer
 {
     class Program
     {
@@ -24,7 +25,7 @@ namespace DumbJsonParser
                 "  { " +
                 "    \"__type\": \"ObjectB\"," +
                 "    \"Foo\": \"world :)\"," +
-                "    \"WierdStr\": \"\\\"I'm escaped!\\\" :)\"" +
+                "    \"WierdStr\": \"\\\"I'm escaped!\\\" :) \\/\"" +
                 "  }" +
                 "]," +
                 "\"CoolNumber\": 152.998," +

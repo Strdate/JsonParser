@@ -6,7 +6,7 @@ using System.Text;
 
 namespace DumbJsonSerializer
 {
-    class TypeManager
+    internal class TypeManager
     {
         private static Dictionary<string, TypeHandlingRecord> types = new Dictionary<string, TypeHandlingRecord>();
 
