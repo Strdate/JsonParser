@@ -33,6 +33,12 @@ namespace DumbJsonSerializer
                 "\"Integer\": 15504," +
                 "\"missingProp\": {\"ImNotHere\": 42.42}," +
                 "\"newLines\": \"New\\nline\\nboo!\"," +
+                "\"vec\": { " +
+                "  \"__type\": \"Vector\"," +
+                "  \"x\": 10.0" +
+                "  \"y\": 20.0" +
+                "  \"z\": 30.0" +
+                "}, " +
                 "\"__type_intArray\": \"Int32\"," +
                 "\"Sbytee\": -117," +
                 "\"TruOrFols\": true," +

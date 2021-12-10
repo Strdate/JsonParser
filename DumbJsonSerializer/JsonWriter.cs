@@ -67,7 +67,7 @@ namespace DumbJsonSerializer
             bool isFirst = true;
             if (!implicitType) {
                 isFirst = false;
-                b.Append($"\"__type\": \"{type.Name}\"");
+                b.Append($"\"__type\": \"{type.FullName}\"");
             }
             foreach (var propr in typeManager.GetProperties(type)) {
                 var prop = propr.prop;

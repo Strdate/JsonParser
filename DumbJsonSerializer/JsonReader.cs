@@ -32,14 +32,16 @@ namespace DumbJsonSerializer
         {
             try {
                 TypeHandlingRecord record = null;
-                if(implicitType != null) {
+                if (implicitType != null) {
                     record = TypeManager.TypeByName(implicitType);
                 }
                 return ReadJsonObject(record);
-            } catch(Exception e) {
+            }
+            catch (Exception e) {
                 throw new Exception($"Error at character {p}: {e.Message}", e);
             }
         }
+         
 
         private object ReadJsonObject(TypeHandlingRecord type = null)
         {
@@ -131,53 +133,42 @@ namespace DumbJsonSerializer
         private object ReadNumber(TypeHandlingRecord type)
         {
             StringBuilder builder = new StringBuilder();
-            bool isInteger = true;
             while (true) {
                 char cur = text[p];
-                if (Char.IsNumber(cur) || cur == '-') {
+                if (Char.IsNumber(cur) || cur == '-' || cur == '.') {
                     builder.Append(cur);
                     p++;
-                } else if (cur == '.') {
-                    builder.Append(cur);
-                    p++;
-                    isInteger = false;
                 } else {
                     if (type == null) {
                         return null;
                     }
                     Type t = type.type;
-                    if (isInteger) {
-                        if (t == typeof(int)) {
-                            return int.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else if (t == typeof(long)) {
-                            return long.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else if (t == typeof(uint)) {
-                            return uint.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else if (t == typeof(ulong)) {
-                            return ulong.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else if (t == typeof(short)) {
-                            return short.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else if (t == typeof(ushort)) {
-                            return ushort.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else if (t == typeof(byte)) {
-                            return byte.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else if (t == typeof(sbyte)) {
-                            return sbyte.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else {
-                            throw new Exception($"Cannot parse '{builder}' to {t.Name}");
-                        }
+                    if (t == typeof(double)) {
+                        return double.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
+                    } else if (t == typeof(int)) {
+                        return int.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
+                    } else if (t == typeof(long)) {
+                        return long.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
+                    } else if (t == typeof(uint)) {
+                        return uint.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
+                    } else if (t == typeof(ulong)) {
+                        return ulong.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
+                    } else if (t == typeof(short)) {
+                        return short.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
+                    } else if (t == typeof(ushort)) {
+                        return ushort.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
+                    } else if (t == typeof(byte)) {
+                        return byte.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
+                    } else if (t == typeof(sbyte)) {
+                        return sbyte.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
+                    } else if (t == typeof(float)) {
+                        return float.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
+                    } else if (t == typeof(uint)) {
+                        return uint.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
+                    } else if (t == typeof(decimal)) {
+                        return decimal.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
                     } else {
-                        if (t == typeof(double)) {
-                            return double.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else if (t == typeof(float)) {
-                            return float.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else if (t == typeof(uint)) {
-                            return uint.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else if (t == typeof(decimal)) {
-                            return decimal.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                        } else {
-                            throw new Exception($"Cannot parse '{builder}' to {t.Name}");
-                        }
+                        throw new Exception($"Cannot parse '{builder}' to {t.Name}");
                     }
                 }
             }

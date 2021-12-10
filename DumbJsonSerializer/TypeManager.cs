@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Xml.Serialization;
 
 namespace DumbJsonSerializer
 {
@@ -14,13 +15,13 @@ namespace DumbJsonSerializer
 
         internal ParsedObject InstantiateObj(TypeHandlingRecord record)
         {
-            return new ParsedObject(Activator.CreateInstance(record.type), record);
+            return new ParsedObject(Activator.CreateInstance(record.type, true), record);
         }
 
         internal ParsedObject InstantiateObj(string typeName)
         {
             TypeHandlingRecord record = TypeByName(typeName);
-            return new ParsedObject(Activator.CreateInstance(record.type), record);
+            return new ParsedObject(Activator.CreateInstance(record.type, true), record);
         }
 
         internal static TypeHandlingRecord TypeByType(Type type)
@@ -36,7 +37,7 @@ namespace DumbJsonSerializer
             if(!types.TryGetValue(name, out TypeHandlingRecord record)) {
                 foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies().Reverse()) {
                     foreach (var type in assembly.GetTypes()) {
-                        if (type.Name == name) {
+                        if (type.Name == name || type.FullName == name) {
                             return PrepareType(type);
                         }
                     }
@@ -62,7 +63,7 @@ namespace DumbJsonSerializer
             } else if (type == typeof(int) || type == typeof(uint) || type == typeof(long) || type == typeof(ulong) || type == typeof(short)
                  || type == typeof(ushort) || type == typeof(byte) || type == typeof(sbyte)) {
                 record.handleType = HandleType.ToStringNaked;
-            } else if (type == typeof(double)) {
+            } else if (type == typeof(double) || type == typeof(float)) {
                 record.handleType = HandleType.DecimalNum;
             } else if (type == typeof(bool)) {
                 record.handleType = HandleType.ToStringLower;
@@ -70,6 +71,7 @@ namespace DumbJsonSerializer
                 record.handleType = HandleType.StructuredObject;
             }
             record.type = type;
+            types[type.FullName] = record;
             types[type.Name] = record;
             typesByType[type] = record;
             return record;
@@ -150,9 +152,9 @@ namespace DumbJsonSerializer
         private void InitProperties()
         {
             var dict = new Dictionary<string, PropertyRecord>();
-            foreach (var prop in type.GetProperties()) {
+            foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public)) {
                 if (prop.GetCustomAttributes(
-                    typeof(NonSerializedAttribute), true
+                    typeof(XmlIgnoreAttribute), true
                     ).FirstOrDefault() == null) {
                     PropertyRecord record = new PropertyRecord();
                     record.typeRecord = TypeManager.TypeByType(prop.PropertyType);

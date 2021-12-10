@@ -26,6 +26,8 @@ namespace DumbJsonSerializer
 
         public sbyte Sbytee { get; private set; }
 
+        public Vector vec { get; private set; }
+
         public ObjectB objB { get; set; }
 
         public List<ObjectB> booArray { get; set; }

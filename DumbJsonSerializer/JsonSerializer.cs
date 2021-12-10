@@ -9,7 +9,7 @@ namespace DumbJsonSerializer
     {
         private TypeManager typeManager = new TypeManager();
 
-        public static string VERSION = "0.0.1";
+        public static string VERSION = "0.0.2";
         public object ReadJson(string text, string implicitType = null)
         {
             var reader = new JsonReader(text, typeManager);
