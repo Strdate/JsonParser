@@ -43,6 +43,7 @@ namespace DumbJsonSerializer
                 "\"Sbytee\": -117," +
                 "\"TruOrFols\": true," +
                 "\"Fols\": false," +
+                "\"NumInObject\": 234," +
                 "\"intArray\": [27, 98, 1145983, 5]" +
                 "}";
 
@@ -60,6 +61,8 @@ namespace DumbJsonSerializer
             string serialized = parser.WriteJson(res);
 
             object utf8 = Encoding.UTF8.GetString( Encoding.UTF8.GetBytes(serialized) );
+
+            
 
             Console.ReadLine();
         }

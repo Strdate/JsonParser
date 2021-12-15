@@ -55,7 +55,9 @@ namespace DumbJsonSerializer
                                 ).FirstOrDefault() == null) {
                 throw new Exception($"Class {type.Name} is not serializable");
             }
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>)) {
+            if(type.IsArray) {
+                throw new Exception("Arrays are not supported. Use List instead");
+            } else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>)) {
                 record.handleType = HandleType.List;
                 record.sourceListType = TypeByType(type.GetGenericArguments()[0]);
             } else if (type == typeof(string)) {
@@ -155,7 +157,7 @@ namespace DumbJsonSerializer
             foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public)) {
                 if (prop.GetCustomAttributes(
                     typeof(XmlIgnoreAttribute), true
-                    ).FirstOrDefault() == null) {
+                    ).FirstOrDefault() == null && !prop.PropertyType.IsArray) {
                     PropertyRecord record = new PropertyRecord();
                     record.typeRecord = TypeManager.TypeByType(prop.PropertyType);
                     record.prop = prop;

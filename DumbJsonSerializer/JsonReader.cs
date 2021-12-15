@@ -30,16 +30,16 @@ namespace DumbJsonSerializer
 
         internal object Read(string implicitType = null)
         {
-            try {
+            /*try {*/
                 TypeHandlingRecord record = null;
                 if (implicitType != null) {
                     record = TypeManager.TypeByName(implicitType);
                 }
                 return ReadJsonObject(record);
-            }
+            /*}
             catch (Exception e) {
                 throw new Exception($"Error at character {p}: {e.Message}", e);
-            }
+            }*/
         }
          
 
@@ -133,19 +133,21 @@ namespace DumbJsonSerializer
         private object ReadNumber(TypeHandlingRecord type)
         {
             StringBuilder builder = new StringBuilder();
+            bool isDecimal = false;
             while (true) {
                 char cur = text[p];
-                if (Char.IsNumber(cur) || cur == '-' || cur == '.') {
+                if (Char.IsNumber(cur) || cur == '-') {
                     builder.Append(cur);
                     p++;
+                } else if(cur == '.') {
+                    builder.Append(cur);
+                    p++;
+                    isDecimal = true;
                 } else {
-                    if (type == null) {
-                        return null;
-                    }
-                    Type t = type.type;
-                    if (t == typeof(double)) {
+                    Type t = type != null && type.type != typeof(object) ? type.type : null;
+                    if ((t == null && isDecimal) || t == typeof(double)) {
                         return double.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
-                    } else if (t == typeof(int)) {
+                    } else if ((t == null) || t == typeof(int)) {
                         return int.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);
                     } else if (t == typeof(long)) {
                         return long.Parse(builder.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture);

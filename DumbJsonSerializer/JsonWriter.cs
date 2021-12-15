@@ -32,7 +32,7 @@ namespace DumbJsonSerializer
                 WriteList(obj, implicitType);
             } else {
                 if (handleType.handleType == HandleType.StructuredObject) {
-                    WriteJsonObject(obj, t, t == implicitType.type);
+                    WriteJsonObject(obj, t, implicitType != null ? t == implicitType.type : false);
                 } else if (handleType.handleType == HandleType.ToStringEscaped) {
                     EscapeStr(obj.ToString());
                 } else if (handleType.handleType == HandleType.ToStringNaked) {
